@@ -119,21 +119,24 @@ if __name__ == '__main__':
     cursor = connection.cursor()
     types_list = []
     types_query = '''INSERT OR IGNORE INTO Types (type_name, kind, base_name) VALUES (?,?,?);'''
-    fields_list = []
-    fields_query = '''INSERT OR IGNORE INTO Fields (field_name, fields_order, struct_type_id, field_type_id) VALUES (?,?,?,?);'''
-    values_list = []
-    values_query = '''INSERT OR IGNORE INTO Def_Values (value_name, value, type_id) VALUES (?,?,?);'''
     for type in bd_type:
         type_name = type['type_name']
-        if type_name == 'ICreateDeviceAccessAsync**':
-            print('gh')
+        if type_name == 'IOrpcDebugNotify*':
+            print('yes')
         kind = type['kind']
         base_name = type['base_name']
         if base_name == '':
             base_name = 'NULL'
         types_list.append((type_name, kind, base_name))
+    cursor.executemany(types_query, types_list)
+    connection.commit()
+    fields_list = []
+    fields_query = '''INSERT OR IGNORE INTO Fields (field_name, fields_order, struct_type_id, field_type_id) VALUES (?,?,?,?);'''
+    values_list = []
+    values_query = '''INSERT OR IGNORE INTO Def_Values (value_name, value, type_id) VALUES (?,?,?);'''
+    for type in bd_type:
         type_search_query = '''SELECT type_id FROM Types WHERE type_name = ?'''
-        cursor.execute(type_search_query, (type_name,))
+        cursor.execute(type_search_query, (type['type_name'],))
         try:
             type_id = cursor.fetchone()[0]
         except TypeError:
@@ -143,12 +146,15 @@ if __name__ == '__main__':
             for order_number, field in enumerate(fields):
                 field_type = field[0]
                 field_name = field[1]
+                if field_name == '':
+                    field_name = 'NOT INDICATED'
                 field_search_query = '''SELECT type_id FROM Types WHERE type_name = ?'''
                 cursor.execute(field_search_query, (field_type,))
                 try:
                     field_type_id = cursor.fetchone()[0]
                 except TypeError:
                     field_type_id = 'NULL'
+                    #print(field_type, type)
                 fields_list.append((field_name, order_number, type_id, field_type_id))
         def_values = type['def_values']
         if def_values:
@@ -156,20 +162,13 @@ if __name__ == '__main__':
                 flag_name = def_value[0]
                 flag_value = def_value[1]
                 values_list.append((flag_name, flag_value.encode(), type_id))
-    cursor.executemany(types_query, types_list)
-    connection.commit()
     cursor.executemany(fields_query, fields_list)
-    connection.commit()
     cursor.executemany(values_query, values_list)
+    connection.commit()
     dll_names_list = []
     dlls_query = '''INSERT OR IGNORE INTO DLLs (dll_name) VALUES (?);'''
     api_names_list = []
     api_categories_query = '''INSERT OR IGNORE INTO API_Categories (api_name) VALUES (?);'''
-    functions_list = []
-    functions_query = '''INSERT INTO Functions (func_name, api_id, dll_id, ret_type_id) VALUES (?,?,?,?);'''
-    arguments_list = []
-    arguments_query = '''INSERT OR IGNORE INTO Arguments (arg_name, arg_order, func_id, arg_type_id) VALUES (?,?,?,?);'''
-    new_types_list = []
     for func in bd_func:
         dll_name = func['dll_name']
         if dll_name == 'none' or dll_name == '*':
@@ -179,15 +178,21 @@ if __name__ == '__main__':
         if api_name == 'none':
             continue
         api_names_list.append((api_name,))
+    cursor.executemany(dlls_query, dll_names_list)
+    cursor.executemany(api_categories_query, api_names_list)
+    connection.commit()
+    functions_list = []
+    functions_query = '''INSERT INTO Functions (func_name, api_id, dll_id, ret_type_id) VALUES (?,?,?,?);'''
+    for func in bd_func:
         func_name = func['func_name']
         api_search_query = '''SELECT api_id FROM API_Categories WHERE api_name = ?'''
-        cursor.execute(api_search_query, (api_name,))
+        cursor.execute(api_search_query, (func['category'],))
         try:
             api_id = cursor.fetchone()[0]
         except TypeError:
             api_id = 'NULL'
         dll_search_query = '''SELECT dll_id FROM DLLs WHERE dll_name = ?'''
-        cursor.execute(dll_search_query, (dll_name,))
+        cursor.execute(dll_search_query, (func['dll_name'],))
         try:
             dll_id = cursor.fetchone()[0]
         except TypeError:
@@ -199,8 +204,14 @@ if __name__ == '__main__':
         except TypeError:
             ret_type_id = 'NULL'
         functions_list.append((func_name, api_id, dll_id, ret_type_id))
+    cursor.executemany(functions_query, functions_list)
+    connection.commit()
+    arguments_list = []
+    arguments_query = '''INSERT OR IGNORE INTO Arguments (arg_name, arg_order, func_id, arg_type_id) VALUES (?,?,?,?);'''
+    new_types_list = []
+    for func in bd_func:
         func_search_query = '''SELECT func_id FROM Functions WHERE func_name = ?'''
-        cursor.execute(func_search_query, (func_name,))
+        cursor.execute(func_search_query, (func['func_name'],))
         try:
             func_id = cursor.fetchone()[0]
         except TypeError:
@@ -211,6 +222,7 @@ if __name__ == '__main__':
                 arg_type = argument[0]
                 arg_name = argument[1]
                 argument_search_query = '''SELECT type_id FROM Types WHERE type_name = ?'''
+                arg_type_id = 'NULL'
                 cursor.execute(argument_search_query, (arg_type,))
                 try:
                     arg_type_id = cursor.fetchone()[0]
@@ -218,20 +230,17 @@ if __name__ == '__main__':
                     while arg_type[-1] == '*':
                         new_types_list.append((arg_type, 'Pointer', arg_type[:-1]))
                         arg_type = arg_type[:-1]
+                    cursor.executemany(types_query, new_types_list)
+                    connection.commit()
                     cursor.execute(argument_search_query, (arg_type,))
                     try:
-                        cursor.fetchone()[0]
+                        arg_type_id = cursor.fetchone()[0]
                     except TypeError:
-                        new_types_list.append((arg_type, 'Interface', 'NULL'))
+                        cursor.execute(types_query, (arg_type, 'Interface', 'NULL'))
+                        connection.commit()
+                        cursor.execute(argument_search_query, (arg_type,))
+                        arg_type_id = cursor.fetchone()[0]
                 arguments_list.append((arg_name, order_number, func_id, arg_type_id))
-    cursor.executemany(types_query, new_types_list)
-    connection.commit()
-    cursor.executemany(api_categories_query, api_names_list)
-    connection.commit()
-    cursor.executemany(dlls_query, dll_names_list)
-    connection.commit()
-    cursor.executemany(functions_query, functions_list)
-    connection.commit()
     cursor.executemany(arguments_query, arguments_list)
     connection.commit()
     connection.close()

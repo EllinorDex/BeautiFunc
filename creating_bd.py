@@ -1,6 +1,7 @@
 import sqlite3
 
-with sqlite3.connect("ApiMonitor.db") as connection:
+path_to_database = 'ApiMonitor.db'
+with sqlite3.connect(path_to_database) as connection:
     cursor = connection.cursor()
 
     # Создаём таблицу API_Categories

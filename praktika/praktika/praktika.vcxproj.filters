@@ -41,5 +41,8 @@
     <ClInclude Include="Argument.h">
       <Filter>Исходные файлы</Filter>
     </ClInclude>
+    <ClInclude Include="Type.h">
+      <Filter>Исходные файлы</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

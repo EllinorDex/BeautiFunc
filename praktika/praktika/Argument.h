@@ -32,6 +32,34 @@ public:
 		}
 		return *this;
 	}
+	bool operator == (const Argument& arg)
+	{
+		if (this->baseTypeName != arg.baseTypeName)
+			return false;
+		if (this->kind != arg.kind)
+			return false;
+		if (this->name != arg.name)
+			return false;
+		if (this->order != arg.order)
+			return false;
+		if (this->typeName != arg.typeName)
+			return false;
+		return true;
+	}
+	bool operator != (const Argument& arg)
+	{
+		if (this->baseTypeName == arg.baseTypeName)
+			return false;
+		if (this->kind == arg.kind)
+			return false;
+		if (this->name == arg.name)
+			return false;
+		if (this->order == arg.order)
+			return false;
+		if (this->typeName == arg.typeName)
+			return false;
+		return true;
+	}
 
 	bool operator < (const Argument& arg) { return order < arg.order; }
 	/*

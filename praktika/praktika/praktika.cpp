@@ -198,6 +198,8 @@ Function extract_from_db(std::string name)
 /////////////////////////////////////////                                                               main
 
 int main(int argc, char* argv[]) {
+    // name = ''
+    // struct = getFuncInfoByName(name)
     Function function;
     std::string name = "getaddrinfo";
     function = extract_from_db(name);

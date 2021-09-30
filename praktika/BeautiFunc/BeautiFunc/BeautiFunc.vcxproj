@@ -141,6 +141,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BeautiFunc.cpp" />
+    <ClCompile Include="Extract.cpp" />
+    <ClCompile Include="SQLFunc.cpp" />
+    <ClCompile Include="sqlite\shell.c" />
+    <ClCompile Include="sqlite\sqlite3.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Argument.h" />
+    <ClInclude Include="Extract.h" />
+    <ClInclude Include="Function.h" />
+    <ClInclude Include="SQLFunc.h" />
+    <ClInclude Include="sqlite\sqlite3.h" />
+    <ClInclude Include="sqlite\sqlite3ext.h" />
+    <ClInclude Include="Type.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

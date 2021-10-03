@@ -55,5 +55,5 @@ public:
 
 	void PushDefVal(pair p) { defval.push_back(p); }
 	void PushField(Argument arg) { fields.push_back(arg); }
-	void SortFields() { fields.sort(); }
+	void SortFields() { fields.sort();}
 };

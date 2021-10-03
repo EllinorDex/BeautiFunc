@@ -1,15 +1,15 @@
 #include "Extract.h"
 #include "SQLFunc.h"
 
-Result functionInformation(std::string functionName)
+Result* functionInformation(std::string functionName)
 {
-    Result result;
+    Result* result = new Result;
     Function func = extract_from_db(functionName);
 
-    result.APICategory = func.Get_API_Categorie();
-    result.DLL = func.Get_DLL();
-    result.returnType = func.Get_Return_Type();
-    result.fuctionName = functionName;
+    result->APICategory = func.Get_API_Categorie();
+    result->DLL = func.Get_DLL();
+    result->returnType = func.Get_Return_Type();
+    result->fuctionName = functionName;
 
 
     std::list<Argument> arguments = func.Get_Arguments();
@@ -18,11 +18,13 @@ Result functionInformation(std::string functionName)
         Arg arg;
         arg.baseTypeName = i->GetBaseTypeName();
         arg.kind = i->GetKind();
+        arg.typeName = i->GetTypeName();
         arg.name = i->GetName();
         arg.order = i->GetOrder();
-        arg.typeName = i->GetTypeName();
+        arg.baseType = new Arg(typeInformation(arg.baseTypeName));
 
         Type temp = typeDisclosure(*i);
+
         if (arg.kind == "Alias")
         {
             std::list<pair> q = temp.GetDefVal();
@@ -39,16 +41,13 @@ Result functionInformation(std::string functionName)
             std::list<Argument> e = temp.GetFields();
             for (auto j = e.begin(); j != e.end(); ++j)
             {
-                Field w;
-                w.baseTypeName = j->GetBaseTypeName();
-                w.kind = j->GetKind();
-                w.name = j->GetName();
+                Arg w = typeInformation(j->GetTypeName());
                 w.order = j->GetOrder();
-                w.typeName = j->GetTypeName();
+                w.name = j->GetName();
                 arg.Fields.push_back(w);
             }
         }
-        result.arguments.push_back(arg);
+        result->arguments.push_back(arg);
     }
     return result;
 }

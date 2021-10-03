@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "Type.h"
 #include <algorithm>
+#include "Extract.h"
 
 static int DefValueCallback(void* result, int argc, char** argv, char** azColName)
 {
@@ -18,7 +19,6 @@ static int DefValueCallback(void* result, int argc, char** argv, char** azColNam
     return 0;
 }
 
-// 
 static int SetCallback(void* result, int argc, char** argv, char** azColName)
 {
     Argument arg;
@@ -38,7 +38,6 @@ static int SetCallback(void* result, int argc, char** argv, char** azColName)
     return 0;
 }
 
-// функция выводящая дополнителбную информацию о типе
 Type typeDisclosure(Argument arg)
 {
     Type type;
@@ -53,7 +52,7 @@ Type typeDisclosure(Argument arg)
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
         return type;
     }
-    type.SetBaseTypeName(arg.GetBaseTypeName());// = Type(arg.typeName, arg.baseTypeName, arg.kind);
+    type.SetBaseTypeName(arg.GetBaseTypeName());
     type.SetKind(arg.GetKind());
     type.SetTypeName(arg.GetTypeName());
 
@@ -102,8 +101,6 @@ static int DAR_callback(void* result, int argc, char** argv, char** azColName) {
 //                                                                                                         check name in database callback
 static int Check_function_callback(void* result, int argc, char** argv, char** azColName)
 {
-    // for (int i = 0; i < argc; i++)
-    //     printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
     if (atoi(argv[0]) > 0)
         return 0;
     return 1;
@@ -188,4 +185,95 @@ Function extract_from_db(std::string name)
 
     sqlite3_close(db);
     return function;
+}
+
+static int BaseNameCallback(void* result, int argc, char** argv, char** azColName)
+{
+    ((Arg*)result)->kind = argv[1] ? argv[1] : "";
+    ((Arg*)result)->baseTypeName = argv[2] ? argv[2] : "";
+    return 0;
+}
+
+static int UnCallback(void* result, int argc, char** argv, char** azColName)
+{
+    Arg field = typeInformation(argv[7] ? argv[7] : "");
+    field.name = argv[4] ? argv[4] : "";
+    field.order = argv[3] ? atoi(argv[3]) : -1;
+ 
+
+    if (field.order != -1)
+    {
+        ((Arg*)result)->Fields.push_back(field);
+    }
+    return 0;
+}
+
+static int AliasCallback(void* result, int argc, char** argv, char** azColName)
+{
+    DefVal p;
+    p.name = argv[3] ? argv[3] : "";
+    p.value = argv[4] ? argv[4] : "";
+    ((Arg*)result)->defVal.push_back(p); 
+    return 0;
+}
+
+Arg typeInformation(std::string typeName)
+{
+    Arg type;
+    sqlite3* db;
+    char* zErrMsg = 0;
+    int rc;
+    std::string sql;
+
+    rc = sqlite3_open("ApiMonitor.db", &db);
+    if (rc) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+        return type;
+    }
+    type.typeName = typeName;
+    sql = "SELECT type_name, kind, base_name FROM Types\
+     WHERE type_name = \"" + typeName + "\";";
+    rc = sqlite3_exec(db, sql.c_str(), BaseNameCallback, &type, &zErrMsg);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
+
+    if (type.baseTypeName != "")
+    {
+        type.baseType = new Arg(typeInformation(type.baseTypeName));
+    }
+    else
+        type.baseType = NULL;
+
+
+    if (type.kind == "Struct" || type.kind == "Union")
+    {
+        sql = "SELECT * FROM\
+    (SELECT base_name, type_name AS tn, kind, fields_order, field_name, field_type_id FROM Types INNER JOIN Fields ON Fields.struct_type_id = Types.type_id) AS FT \
+     INNER JOIN Types ON TYPES.type_id = FT.field_type_id\
+     WHERE tn = \"" + typeName + "\";";
+
+        rc = sqlite3_exec(db, sql.c_str(), UnCallback, &type, &zErrMsg);
+        if (rc != SQLITE_OK) {
+            fprintf(stderr, "SQL error: %s\n", zErrMsg);
+            sqlite3_free(zErrMsg);
+        }
+
+    }
+    else if (type.kind == "Alias")
+    {
+        sql = "SELECT type_name, kind, base_name, value_name, value FROM\
+            Types INNER JOIN Def_Values ON Types.type_id = Def_Values.type_id\
+            WHERE type_name =\"" + typeName + "\";";
+        rc = sqlite3_exec(db, sql.c_str(), AliasCallback, &type, &zErrMsg);
+
+        if (rc != SQLITE_OK) {
+            fprintf(stderr, "SQL error: %s\n", zErrMsg);
+            sqlite3_free(zErrMsg);
+        }
+    }
+    sqlite3_close(db);
+    return type;
 }

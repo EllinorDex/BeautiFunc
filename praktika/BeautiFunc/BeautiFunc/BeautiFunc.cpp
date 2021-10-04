@@ -11,20 +11,46 @@ const TCHAR szCounterFileName[] = L"counter.dat";
 
 
 VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc) {
-    Result q = functionInformation(funcName);
+    Result* q = functionInformation(funcName);
     const char* str = "there!";
     printf("%-20s %s\n","Function name:", funcName.c_str());
-    printf("%-20s %s\n", "DLL name:", q.DLL.c_str());
-    printf("%-20s %s\n", "API Category:", q.APICategory.c_str());
-    printf("%-20s %s\n\n", "Return type:", q.returnType.c_str());
+    printf("%-20s %s\n", "DLL name:", q->DLL.c_str());
+    printf("%-20s %s\n", "API Category:", q->APICategory.c_str());
+    printf("%-20s %s\n\n", "Return type:", q->returnType.c_str());
     printf("Arguments:\n");
 
-    for (auto arg = q.arguments.begin(); arg != q.arguments.end(); ++arg) {
+    for (auto arg = q->arguments.begin(); arg != q->arguments.end(); ++arg) {
         printf("%10d.\n", arg->order + 1);
         printf("%12s%-15s%s\n", " ","Name:", arg->name.c_str());
         printf("%12s%-15s%s\n", " ", "Type:", arg->typeName.c_str());
-        printf("%12s%-15s%s\n", " ", "Kind:", arg->kind.c_str());
         printf("%12s%-15s%s\n", " ", "Raw value:", args[arg->order].c_str());
+        printf("%12s%-15s%s\n", " ", "Kind:", arg->kind.c_str());
+        std::string pointer = "->";
+        std::string alias = "~~";
+        std::string type_chain = arg->typeName;
+        if (arg->kind == "Alias") {
+            type_chain += alias;
+            type_chain += arg->baseTypeName;
+        }
+        if (arg->kind == "Pointer") {
+            type_chain += pointer;
+            type_chain += arg->baseTypeName;
+        }
+        auto baseArg = arg->baseType;
+        while (baseArg) {
+
+            //printf("%s", baseArg->typeName.c_str());
+            if (baseArg->kind == "Alias") {
+                type_chain += alias;
+                type_chain += baseArg->baseTypeName;
+            }
+            if (baseArg->kind == "Pointer") {
+                type_chain += pointer;
+                type_chain += baseArg->baseTypeName;
+            }
+            baseArg = baseArg->baseType;
+        }
+        printf("%12s%-15s%s\n", " ", "Type Chain:", type_chain.c_str());
         printf("%12s%-15s%s\n\n", " ", "Beauti value:", args[arg->order].c_str());
     }
 }

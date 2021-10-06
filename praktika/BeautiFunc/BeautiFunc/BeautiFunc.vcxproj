@@ -150,6 +150,7 @@
     <ClInclude Include="Argument.h" />
     <ClInclude Include="Extract.h" />
     <ClInclude Include="Function.h" />
+    <ClInclude Include="Header.h" />
     <ClInclude Include="SQLFunc.h" />
     <ClInclude Include="sqlite\sqlite3.h" />
     <ClInclude Include="sqlite\sqlite3ext.h" />

@@ -20,6 +20,8 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
     int rawVal             = 0;
     char* str;
     std::string buf;
+    long long buf4 = 0, buf5 = 0;
+    bool isFlag = false;
 
     auto q = functionInformation(funcName);
 
@@ -48,6 +50,18 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
 
         while (baseArg->baseType)
         {
+            if (baseArg->defVal.size() != 0) {
+                for (auto defv = baseArg->defVal.begin(); defv != baseArg->defVal.end(); ++defv) {
+                    std::string bufs = defv->value;
+                    sscanf(bufs.c_str(), "%x", &buf4);
+                    sscanf(str, "%X", &buf5);
+                    if (buf4 == buf5) {
+                        beautiValPrev = defv->name;
+                        isFlag = true;
+                        break;
+                    }
+                }
+            }
             if (baseArg->kind == "Alias")
             {
                 type_chain += alias;
@@ -86,10 +100,15 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
 
         if (baseArg->kind == "Integer")
         {
-            long long buf1;
-            sscanf(beautiValPrev.c_str(), "0x%llx", &buf1);
-            beautiVal += " (" + std::to_string(buf1) + ")";
-            printf("%12s%-15s%s\n", " ", "Type Chain:", type_chain.c_str());
+            if (isFlag) {
+                beautiVal += " (" + beautiValPrev + ")";
+            }
+            else {
+                long long buf1;
+                sscanf(beautiValPrev.c_str(), "0x%llx", &buf1);
+                beautiVal += " (" + std::to_string(buf1) + ")";
+                printf("%12s%-15s%s\n", " ", "Type Chain:", type_chain.c_str());
+            }
         }
         else if (baseArg->kind == "Character")
         {
@@ -149,12 +168,12 @@ int main()
     /*auto result = ReadFile(hFile, &dwCounter, sizeof(dwCounter), &dwTemp, NULL);*/
 
     std::string funcName = "CreateFile";
-    char str[16 + 1];
+    char str[1024 + 1];
     char* str2 = 0;
     std::string args[7]{};
 
-    sprintf(str2, "%S", szCounterFileName);
-    args[0] = str2;
+    sprintf(str, "0x%p", &szCounterFileName);
+    args[0] = str;
     sprintf(str, "0x%016X", GENERIC_READ);
     args[1] = str;
     sprintf(str, "0x%016X", 0);
@@ -167,6 +186,11 @@ int main()
     args[5] = str;
     sprintf(str, "0x%016X", NULL);
     args[6] = str;
+
+    std::string s1 = "0x0002";
+    long long i = 0;
+    sscanf(s1.c_str(), "%x", &i);
+
 
     /*sprintf(str, "0x%016X", hFile);
     args[0] = str;

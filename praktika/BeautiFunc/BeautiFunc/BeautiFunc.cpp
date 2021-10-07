@@ -6,8 +6,6 @@
 #include <algorithm>
 
 
-const TCHAR szCounterFileName[] = L"counter.dat";
-
 
 VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
 {
@@ -88,18 +86,27 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
 
         if (baseArg->kind == "Integer")
         {
-            int buf1;
-            sscanf(beautiValPrev.c_str(), "0x%x", &buf1);
+            long long buf1;
+            sscanf(beautiValPrev.c_str(), "0x%llx", &buf1);
             beautiVal += " (" + std::to_string(buf1) + ")";
             printf("%12s%-15s%s\n", " ", "Type Chain:", type_chain.c_str());
         }
-        else if (baseArg->kind == "")
+        else if (baseArg->kind == "Character")
         {
-
+            char* buf1;
+            sscanf(beautiValPrev.c_str(), "0x%x", &buf1);
+            beautiVal += " (";
+            beautiVal += buf1;
+            beautiVal += ")";
+            printf("%12s%-15s%s\n", " ", "Type Chain:", type_chain.c_str());
         }
-        else if (baseArg->kind == "")
+        else if (baseArg->kind == "Floating")
         {
-
+            long long buf1;
+            sscanf(beautiValPrev.c_str(), "0x%llx", &buf1);
+            double buf2 = reinterpret_cast<double&>(buf1);
+            beautiVal += " (" + std::to_string(buf2) + ")";
+            printf("%12s%-15s%s\n", " ", "Type Chain:", type_chain.c_str());
         }
         else if (baseArg->kind == "")
         {
@@ -128,6 +135,7 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
 int main()
 {
     DWORD dwCounter, dwTemp;
+    const TCHAR szCounterFileName[] = L"counter.dat";
     ///*HANDLE hFile = CreateFile(szCounterFileName, GENERIC_WRITE, 0, NULL,
     //    CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);*/
     HANDLE hFile = CreateFile(szCounterFileName, GENERIC_READ, 0, NULL,
@@ -138,13 +146,29 @@ int main()
         return 1;
     }
 
-    auto result = ReadFile(hFile, &dwCounter, sizeof(dwCounter), &dwTemp, NULL);
+    /*auto result = ReadFile(hFile, &dwCounter, sizeof(dwCounter), &dwTemp, NULL);*/
 
-    std::string funcName = "ReadFile";
+    std::string funcName = "CreateFile";
     char str[16 + 1];
-    std::string args[5]{};
+    char* str2 = 0;
+    std::string args[7]{};
 
-    sprintf(str, "0x%016X", hFile);
+    sprintf(str2, "%S", szCounterFileName);
+    args[0] = str2;
+    sprintf(str, "0x%016X", GENERIC_READ);
+    args[1] = str;
+    sprintf(str, "0x%016X", 0);
+    args[2] = str;
+    sprintf(str, "0x%016X", NULL);
+    args[3] = str;
+    sprintf(str, "0x%016X", OPEN_EXISTING);
+    args[4] = str;
+    sprintf(str, "0x%016X", FILE_ATTRIBUTE_NORMAL);
+    args[5] = str;
+    sprintf(str, "0x%016X", NULL);
+    args[6] = str;
+
+    /*sprintf(str, "0x%016X", hFile);
     args[0] = str;
     sprintf(str, "0x%p", &dwCounter);
     args[1] = str;
@@ -154,7 +178,7 @@ int main()
     sprintf(str, "0x%p", &dwTemp);
     args[3] = str;
     sprintf(str, "0x%016X", 0);
-    args[4] = str;
-    PrinterFuncInfo(funcName, args, 5);
+    args[4] = str;*/
+    PrinterFuncInfo(funcName, args, 7);
     ExitProcess(0);
 }

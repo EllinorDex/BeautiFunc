@@ -21,7 +21,14 @@ Result* functionInformation(std::string functionName)
         arg.typeName = i->GetTypeName();
         arg.name = i->GetName();
         arg.order = i->GetOrder();
-        arg.baseType = new Arg(typeInformation(arg.baseTypeName));
+        if (arg.baseTypeName != "")
+        {
+            arg.baseType = new Arg(typeInformation(arg.baseTypeName));
+        }
+        else
+        {
+            arg.baseType = 0;
+        }
 
         Type temp = typeDisclosure(*i);
 

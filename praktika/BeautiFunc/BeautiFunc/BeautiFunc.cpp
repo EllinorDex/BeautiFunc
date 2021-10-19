@@ -4,6 +4,7 @@
 #include "Extract.h"
 #include <stdio.h>
 #include <algorithm>
+#include "bluetoothapis.h"
 
 
 
@@ -22,6 +23,7 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
     std::string buf;
     long long buf4 = 0, buf5 = 0;
     bool isFlag = false;
+    bool strFlag = false;
 
     auto q = functionInformation(funcName);
 
@@ -51,13 +53,14 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
         while (baseArg->baseType)
         {
             if (baseArg->defVal.size() != 0) {
+                isFlag = true;
                 for (auto defv = baseArg->defVal.begin(); defv != baseArg->defVal.end(); ++defv) {
                     std::string bufs = defv->value;
                     sscanf(bufs.c_str(), "%x", &buf4);
                     sscanf(str, "%X", &buf5);
                     if (buf4 == buf5) {
                         beautiValPrev = defv->name;
-                        isFlag = true;
+                        strFlag = true;
                         break;
                     }
                 }
@@ -71,7 +74,13 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
             if (baseArg->kind == "Pointer")
             {
                 sscanf(str, "0x%p", &pointVal);
-                if (pointVal == NULL)
+                if (baseArg->baseType->kind == "TCharacter") {
+
+                }
+                else if (baseArg->baseType->kind == "Struct") {
+
+                }
+                else if (pointVal == NULL)
                 {
                     beautiValPrev = "NULL";
                     beautiVal += " (NULL)";
@@ -98,10 +107,31 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
             baseArg = baseArg->baseType;
         }
 
+        if (baseArg->kind == "Struct") {
+            beautiVal += " (";
+            long long* buf1;
+            sscanf(beautiValPrev.c_str(), "0x%p", &buf1);
+            for (auto field = baseArg->Fields.begin(); field != baseArg->Fields.end(); ++field) {
+                int buf2 = *buf1;
+                auto copyField = field;
+                if (++copyField == baseArg->Fields.end())
+                    beautiVal += std::to_string(buf2);
+                else
+                    beautiVal += std::to_string(buf2) + ", ";
+                buf1++;
+            }
+            beautiVal += ")";
+            
+        }
+
         if (baseArg->kind == "Integer")
         {
             if (isFlag) {
+                if (!strFlag)
+                    beautiValPrev = "NULL";
                 beautiVal += " (" + beautiValPrev + ")";
+                isFlag = false;
+                strFlag = false;
             }
             else {
                 long long buf1;
@@ -110,12 +140,15 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
                 printf("%12s%-15s%s\n", " ", "Type Chain:", type_chain.c_str());
             }
         }
-        else if (baseArg->kind == "Character")
+        else if (baseArg->kind == "TCharacter")
         {
-            char* buf1;
-            sscanf(beautiValPrev.c_str(), "0x%x", &buf1);
+            void* ptr = 0;
+            sscanf(beautiValPrev.c_str(), "%p", &ptr);
+            wchar_t* buf1 = reinterpret_cast<wchar_t*>(ptr);
             beautiVal += " (";
-            beautiVal += buf1;
+            std::wstring ws = buf1;
+            std::string s(ws.begin(), ws.end());
+            beautiVal += s;
             beautiVal += ")";
             printf("%12s%-15s%s\n", " ", "Type Chain:", type_chain.c_str());
         }
@@ -153,56 +186,73 @@ VOID PrinterFuncInfo(std::string funcName, std::string* args, DWORD argc)
 
 int main()
 {
-    DWORD dwCounter, dwTemp;
-    const TCHAR szCounterFileName[] = L"counter.dat";
+    //DWORD dwCounter, dwTemp;
+    //const TCHAR szCounterFileName[] = L"counter.dat";
     ///*HANDLE hFile = CreateFile(szCounterFileName, GENERIC_WRITE, 0, NULL,
     //    CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);*/
-    HANDLE hFile = CreateFile(szCounterFileName, GENERIC_READ, 0, NULL,
-        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    //HANDLE hFile = CreateFile(szCounterFileName, GENERIC_READ, 0, NULL,
+    //    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-    if (INVALID_HANDLE_VALUE == hFile)
-    {
-        return 1;
-    }
+    //if (INVALID_HANDLE_VALUE == hFile)
+    //{
+    //    return 1;
+    //}
 
-    /*auto result = ReadFile(hFile, &dwCounter, sizeof(dwCounter), &dwTemp, NULL);*/
+    //auto result = ReadFile(hFile, &dwCounter, sizeof(dwCounter), &dwTemp, NULL);
 
-    std::string funcName = "CreateFile";
+    ////std::string funcName = "CreateFile";
+    //char str[1024 + 1];
+    //char* str2 = 0;
+    //std::string args[7]{};/*
+
+    //sprintf(str, "0x%p", szCounterFileName);
+    //args[0] = str;
+    //sprintf(str, "0x%016X", GENERIC_READ);
+    //args[1] = str;
+    //sprintf(str, "0x%016X", 0);
+    //args[2] = str;
+    //sprintf(str, "0x%016X", NULL);
+    //args[3] = str;
+    //sprintf(str, "0x%016X", OPEN_EXISTING);
+    //args[4] = str;
+    //sprintf(str, "0x%016X", FILE_ATTRIBUTE_NORMAL);
+    //args[5] = str;
+    //sprintf(str, "0x%016X", NULL);
+    //args[6] = str;
+
+    //std::string s1 = "0x0002";
+    //long long i = 0;
+    //sscanf(s1.c_str(), "%x", &i);*/
+
+    //std::string funcName = "ReadFile";
+    //sprintf(str, "0x%016X", hFile);
+    //args[0] = str;
+    //sprintf(str, "0x%p", &dwCounter);
+    //args[1] = str;
+    //sprintf(str, "0x%016X", sizeof(dwCounter));
+    //args[2] = str;
+    //std::cout << dwTemp << std::endl;
+    //sprintf(str, "0x%p", &dwTemp);
+    //args[3] = str;
+    //sprintf(str, "0x%016X", 0);
+    //args[4] = str;
+
+    _BLUETOOTH_FIND_RADIO_PARAMS bfrp = { 12 };
+    HANDLE h = 0;
+    _BLUETOOTH_RADIO_INFO bri{13,4,L"name",12,9,1};
+
+    //BluetoothFindFirstRadio(&bfrp, &h);
+    //BluetoothGetRadioInfo(h, &bri);
+
+    std::string funcName = "BluetoothGetRadioInfo";
+    std::string args[2]{};
     char str[1024 + 1];
-    char* str2 = 0;
-    std::string args[7]{};
 
-    sprintf(str, "0x%p", &szCounterFileName);
+    sprintf(str, "0x%016X", h);
     args[0] = str;
-    sprintf(str, "0x%016X", GENERIC_READ);
+    sprintf(str, "0x%p", &bri);
     args[1] = str;
-    sprintf(str, "0x%016X", 0);
-    args[2] = str;
-    sprintf(str, "0x%016X", NULL);
-    args[3] = str;
-    sprintf(str, "0x%016X", OPEN_EXISTING);
-    args[4] = str;
-    sprintf(str, "0x%016X", FILE_ATTRIBUTE_NORMAL);
-    args[5] = str;
-    sprintf(str, "0x%016X", NULL);
-    args[6] = str;
 
-    std::string s1 = "0x0002";
-    long long i = 0;
-    sscanf(s1.c_str(), "%x", &i);
-
-
-    /*sprintf(str, "0x%016X", hFile);
-    args[0] = str;
-    sprintf(str, "0x%p", &dwCounter);
-    args[1] = str;
-    sprintf(str, "0x%016X", sizeof(dwCounter));
-    args[2] = str;
-    std::cout << dwTemp << std::endl;
-    sprintf(str, "0x%p", &dwTemp);
-    args[3] = str;
-    sprintf(str, "0x%016X", 0);
-    args[4] = str;*/
-    PrinterFuncInfo(funcName, args, 7);
+    PrinterFuncInfo(funcName, args, 2);
     ExitProcess(0);
 }
